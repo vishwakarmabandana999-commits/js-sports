@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JS ESPORTS • Room Access</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#101114;color:#fff}.wrap{max-width:560px;margin:auto;padding:20px}
+.card{background:#191b20;border:1px solid #30333b;border-radius:18px;padding:20px;margin:14px 0}
+h1{margin:0 0 5px}input,button{width:100%;box-sizing:border-box;padding:13px;margin-top:10px;border-radius:11px;font-size:16px}
+input{background:#101114;color:#fff;border:1px solid #40434c}button{border:0;font-weight:700;cursor:pointer;background:#fff;color:#111}
+.room{font-size:26px;font-weight:800;word-break:break-all;margin-top:4px}.muted{color:#a9adb7;font-size:14px}
+.err{color:#ff8d8d}.ok{color:#9ff0b0}.hidden{display:none}
+a{color:#fff}
+</style>
+</head>
+<body><main class="wrap">
+<div class="card"><h1>🎮 JS ESPORTS</h1><div class="muted">Free Fire Tournament • Room Access</div></div>
+<div class="card">
+<h2>🔐 Get Room ID & Password</h2>
+<div class="muted">Enter the common tournament token.</div>
+<input id="token" placeholder="Tournament Token" autocomplete="off">
+<button id="check">Get Room Details</button>
+<p id="msg" aria-live="polite"></p>
+<div id="result" class="hidden">
+<div class="card"><div class="muted">ROOM ID</div><div id="rid" class="room"></div></div>
+<div class="card"><div class="muted">PASSWORD</div><div id="rpass" class="room"></div></div>
+</div>
+</div>
+<div class="card">
+<h2>🛠️ Admin</h2>
+<div class="muted">Admin management is on the separate admin page.</div>
+<p><a href="admin.html">Open Admin Panel →</a></p>
+</div>
+</main>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "PASTE_YOUR_FIREBASE_API_KEY",
+  authDomain: "PASTE_YOUR_PROJECT.firebaseapp.com",
+  projectId: "PASTE_YOUR_PROJECT_ID",
+  storageBucket: "PASTE_YOUR_PROJECT.firebasestorage.app",
+  messagingSenderId: "PASTE_YOUR_SENDER_ID",
+  appId: "PASTE_YOUR_APP_ID"
+};
+const app=initializeApp(firebaseConfig), db=getFirestore(app);
+const $=id=>document.getElementById(id);
+$("check").onclick=async()=>{
+  const token=$("token").value.trim();
+  $("result").classList.add("hidden");
+  if(!token){$("msg").textContent="Enter the token.";return}
+  try{
+    const snap=await getDoc(doc(db,"tournament","current"));
+    if(!snap.exists()) throw new Error("Room details are not published.");
+    const d=snap.data();
+    if(d.published!==true){$("msg").textContent="Room details are currently hidden.";return}
+    if(token.toLowerCase()!==String(d.token||"").toLowerCase()){$("msg").textContent="Invalid token.";return}
+    $("rid").textContent=d.roomId||"";
+    $("rpass").textContent=d.password||"";
+    $("result").classList.remove("hidden"); $("msg").textContent="Token verified.";
+  }catch(e){$("msg").textContent="Unable to load room details. Check the site setup."}
+};
+</script></body></html>

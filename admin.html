@@ -1,0 +1,68 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JS ESPORTS • Admin</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#101114;color:#fff}.wrap{max-width:560px;margin:auto;padding:20px}
+.card{background:#191b20;border:1px solid #30333b;border-radius:18px;padding:20px;margin:14px 0}
+input,button{width:100%;box-sizing:border-box;padding:13px;margin-top:10px;border-radius:11px;font-size:16px}
+input{background:#101114;color:#fff;border:1px solid #40434c}button{border:0;font-weight:700;cursor:pointer;background:#fff;color:#111}
+.secondary{background:#30333b;color:#fff}.hidden{display:none}.muted{color:#a9adb7;font-size:14px}
+</style>
+</head>
+<body><main class="wrap">
+<div class="card"><h1>🛠️ JS ESPORTS Admin</h1><div class="muted">Secure Firebase login + room management</div></div>
+<div id="login" class="card">
+<h2>Admin Login</h2>
+<input id="email" type="email" placeholder="Admin email">
+<input id="password" type="password" placeholder="Password">
+<button id="loginBtn">Login</button><p id="loginMsg"></p>
+</div>
+<div id="panel" class="card hidden">
+<h2>Room Details</h2>
+<div class="muted">One common token for the tournament.</div>
+<input id="token" placeholder="Common Token">
+<input id="room" placeholder="Room ID">
+<input id="pass" placeholder="Room Password">
+<button id="publish">Publish / Update</button>
+<button id="hide" class="secondary">Hide Room Details</button>
+<button id="logout" class="secondary">Logout</button>
+<p id="status"></p>
+</div>
+</main>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "PASTE_YOUR_FIREBASE_API_KEY",
+  authDomain: "PASTE_YOUR_PROJECT.firebaseapp.com",
+  projectId: "PASTE_YOUR_PROJECT_ID",
+  storageBucket: "PASTE_YOUR_PROJECT.firebasestorage.app",
+  messagingSenderId: "PASTE_YOUR_SENDER_ID",
+  appId: "PASTE_YOUR_APP_ID"
+};
+const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app);
+const $=id=>document.getElementById(id);
+onAuthStateChanged(auth,async user=>{
+  $("login").classList.toggle("hidden",!!user); $("panel").classList.toggle("hidden",!user);
+  if(user){
+    const s=await getDoc(doc(db,"tournament","current"));
+    if(s.exists()){const d=s.data();$("token").value=d.token||"";$("room").value=d.roomId||"";$("pass").value=d.password||""}
+  }
+});
+$("loginBtn").onclick=async()=>{
+  try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);$("loginMsg").textContent="Logged in."}
+  catch(e){$("loginMsg").textContent="Login failed. Check your email/password."}
+};
+$("publish").onclick=async()=>{
+  const token=$("token").value.trim(),room=$("room").value.trim(),password=$("pass").value.trim();
+  if(!token||!room||!password){$("status").textContent="Fill all fields.";return}
+  await setDoc(doc(db,"tournament","current"),{token,roomId:room,password,published:true,updatedAt:Date.now()});
+  $("status").textContent="Room details published.";
+};
+$("hide").onclick=async()=>{await setDoc(doc(db,"tournament","current"),{published:false},{merge:true});$("status").textContent="Room details hidden."};
+$("logout").onclick=()=>signOut(auth);
+</script></body></html>
